@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Animation</string>
+    <string name="view_stretch">视图拉伸动画</string>
+</resources>
