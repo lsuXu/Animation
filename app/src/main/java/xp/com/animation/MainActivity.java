@@ -31,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
 
     private AnimatorSet cycleAnimatorSet ;//圆运动轨迹动画，通过插值器实现
 
+    private AnimatorSet roundAnimatorSet ;//围绕图片轨迹运动动画
+
     private Button stretchAnimal ;//拉伸的对象
 
     private ImageView translateAnimal ;//平移的对象
@@ -38,6 +40,12 @@ public class MainActivity extends AppCompatActivity {
     private ImageView animationSetAnim ;//组合动画的对象
 
     private ImageView cycleTranslateAnimal ;//圆轨迹运动的对象
+
+    private ImageView viewPropertyAnim ;//对对象操作实现动画
+
+    private ImageView imgBg ;//被围绕的背景图
+
+    private ImageView roundBgAnim ; //围绕动画
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
         showTranslateXAnim();
         showAnimatorSet();
         showCycleTranslateAnim();
+        viewPropertyAnim.animate().alpha(0.5f).setDuration(3000).x(600).y(500);
     }
 
     //初始化视图
@@ -56,12 +65,48 @@ public class MainActivity extends AppCompatActivity {
         translateAnimal = findViewById(R.id.anim_x_translate);
         animationSetAnim = findViewById(R.id.anim_animationSet);
         cycleTranslateAnimal = findViewById(R.id.anim_cycle_translate);
+        viewPropertyAnim = findViewById(R.id.anim_view_property_anim);
+        imgBg = findViewById(R.id.img_bg);
+        //在背景图加载完成后启动背景动画
+        imgBg.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+               showRoundImgAnim();
+               imgBg.removeOnLayoutChangeListener(this);
+            }
+        });
+        imgBg.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(roundAnimatorSet != null){
+                    //动画开启
+                    if(roundAnimatorSet.isRunning()) {
+                        //动画暂停
+                        if (!roundAnimatorSet.isPaused()) {
+                            roundAnimatorSet.pause();
+                        } else {
+                            roundAnimatorSet.resume();
+                        }
+                    }else{
+                        roundAnimatorSet.start();
+                    }
+                }
+            }
+        });
+        roundBgAnim = findViewById(R.id.anim_round_bg);
+        roundBgAnim.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                showRoundImgAnim();
+                roundBgAnim.removeOnLayoutChangeListener(this);
+            }
+        });
     }
 
 
     //拉伸动画
     private void showStretchAnimation(){
-        stretchValueAnimator = ValueAnimator.ofInt(stretchAnimal.getLayoutParams().width,500,200,350);
+        stretchValueAnimator = ValueAnimator.ofInt(stretchAnimal.getLayoutParams().width,500,1080,350,1080,350);
         //设置动画播放的各种属性
         stretchValueAnimator.setDuration(5000);//持续时长
 
@@ -206,5 +251,71 @@ public class MainActivity extends AppCompatActivity {
 
         cycleAnimatorSet.setDuration(3000);
         cycleAnimatorSet.start();
+    }
+
+    private void showRoundImgAnim(){
+
+        float x1 = imgBg.getX(),y1 = imgBg.getY(),width1 = imgBg.getWidth(),height1 = imgBg.getHeight();
+        float width2 = roundBgAnim.getWidth(),height2 = roundBgAnim.getHeight();
+        if(width1 == 0|| width2 == 0 || height1 == 0 || width2 == 0){
+            return;
+        }
+        float x = x1 - width2/2 ;
+        float y = y1 - height2/2;
+
+        Log.i(TAG + 6,String.format("x = %s,y = %s,width = %s,height = %s",x1,y1,width1,height1));
+        roundAnimatorSet = new AnimatorSet();
+        //向下运动
+        ObjectAnimator initLocation = ObjectAnimator.ofFloat(roundBgAnim,"TranslationX",x,x);
+        ObjectAnimator downAnim = ObjectAnimator.ofFloat(roundBgAnim,"TranslationY",y,y+height1);
+        //向右运动
+        ObjectAnimator rightAnim = ObjectAnimator.ofFloat(roundBgAnim,"TranslationX",x,x+width1);
+        ObjectAnimator upAnim = ObjectAnimator.ofFloat(roundBgAnim,"TranslationY",y + height1,y);
+        ObjectAnimator leftAnim = ObjectAnimator.ofFloat(roundBgAnim,"TranslationX",x+width1,x);
+
+        roundAnimatorSet.play(initLocation).with(downAnim);
+        roundAnimatorSet.play(downAnim).before(rightAnim);
+        roundAnimatorSet.play(rightAnim).before(upAnim);
+        roundAnimatorSet.play(upAnim).before(leftAnim);
+        roundAnimatorSet.setDuration(3000);
+        roundAnimatorSet.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                super.onAnimationCancel(animation);
+                Log.i(TAG + 6,"onAnimationCancel");
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+                Log.i(TAG + 6,"onAnimationEnd");
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+                super.onAnimationRepeat(animation);
+                Log.i(TAG + 6,"onAnimationRepeat");
+            }
+
+            @Override
+            public void onAnimationStart(Animator animation) {
+                super.onAnimationStart(animation);
+                Log.i(TAG + 6,"onAnimationStart");
+            }
+
+            @Override
+            public void onAnimationPause(Animator animation) {
+                super.onAnimationPause(animation);
+                Log.i(TAG + 6,"onAnimationPause");
+            }
+
+            @Override
+            public void onAnimationResume(Animator animation) {
+                super.onAnimationResume(animation);
+                Log.i(TAG + 6,"onAnimationResume");
+            }
+        });
+        roundAnimatorSet.start();
+
     }
 }
